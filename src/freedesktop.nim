@@ -28,10 +28,10 @@ func hash*(entry: DesktopEntry): Hash {.inline.} =
   hash
 
 proc readDesktopEntry*(path: string): Option[DesktopEntry] =
-  info "freedesktop: reading desktop entry: " & path
+  debug "freedesktop: reading desktop entry: " & path
 
   if not fileExists(path):
-    warn "freedesktop: cannot parse desktop entry as file doesn't exist: " & path
+    debug "freedesktop: cannot parse desktop entry as file doesn't exist: " & path
     return
 
   let rawContent = readFile(path)
@@ -42,12 +42,12 @@ proc readDesktopEntry*(path: string): Option[DesktopEntry] =
     content &= line & '\n'
   
   if content.len < 1:
-    warn "freedesktop: cannot parse desktop entry as file is empty: " & path
+    debug "freedesktop: cannot parse desktop entry as file is empty: " & path
     return
 
   let parsed = iniplus.parseString(content)
   if not parsed.exists("Desktop Entry", "Name"):
-    warn "freedesktop: cannot get name of application in desktop entry, ignoring: " & path
+    debug "freedesktop: cannot get name of application in desktop entry, ignoring: " & path
     return
 
   var entry: DesktopEntry
@@ -55,7 +55,7 @@ proc readDesktopEntry*(path: string): Option[DesktopEntry] =
   try:
     entry.name = parsed.getString("Desktop Entry", "Name")
   except ValueError:
-    warn "freedesktop: cannot interpret INI file as desktop entry - application name is not defined: " & path
+    debug "freedesktop: cannot interpret INI file as desktop entry - application name is not defined: " & path
     return
 
   if parsed.exists("Desktop Entry", "Terminal"):
@@ -67,7 +67,7 @@ proc readDesktopEntry*(path: string): Option[DesktopEntry] =
       if parsed.exists(toplevel, "Exec"):
         entry.exec = parsed.getString(toplevel, "Exec")
   except ValueError:
-    warn "freedesktop: cannot interpret INI file as desktop entry - application binary is not defined: " & path
+    debug "freedesktop: cannot interpret INI file as desktop entry - application binary is not defined: " & path
     return
 
   if parsed.exists("Desktop Entry", "Actions"):

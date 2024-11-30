@@ -6,8 +6,8 @@ proc main =
   logging.addHandler(newColoredLogger())
   logging.setLogFilter(lvlInfo)
   
-  let configDir = getConfigDir()
-  if not dirExists(configDir): createDir(configDir)
+  let configDir = getConfigDir() / "basket"
+  discard existsOrCreateDir(configDir)
   
   if fileExists(configDir / "config.js"):
     loadConfig(configDir / "config.js")

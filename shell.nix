@@ -12,6 +12,7 @@ pkgs.mkShell {
 		xorg.libXext
 		libxkbcommon
 		libGL.dev
+		fontconfig.dev
 		wayland
 		simdutf
 		wayland-protocols

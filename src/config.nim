@@ -41,6 +41,7 @@ type
   Config* = object
     colors*: Table[ColorFor, Color]
     boundsHit*: BoundsHitBehaviour
+    font*: string
 
 var config: Config
 
@@ -168,6 +169,16 @@ proc generateConfigProcs*(runtime: Runtime) =
           BoundsHitBehaviour.Stay
 
       config.boundsHit = behaviour
+  )
+
+  runtime.defineFn(
+    "setFont",
+    proc =
+      if runtime.argumentCount() < 1:
+        runtime.vm.typeError("setFont expects 1 argument, got " & $runtime.argumentCount())
+
+      let value = runtime.ToString(&runtime.argument(1))
+      config.font = value
   )
 
 proc loadConfig*(file: string) =

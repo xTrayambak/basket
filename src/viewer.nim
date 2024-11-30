@@ -3,7 +3,7 @@ import std/[os, logging, tables, importutils]
 import std/posix except Key
 import pkg/[opengl, siwin, nanovg, vmath]
 import pkg/siwin/platforms/wayland/[window, windowOpengl]
-import ./[freedesktop, search, usage_history, config]
+import ./[freedesktop, search, usage_history, config, sugar, fonts]
 
 privateAccess(Window)
 
@@ -296,7 +296,7 @@ proc runBasketViewer*(entries: sink seq[DesktopEntry]): Viewer =
   viewer.wl = move(wl)
   viewer.selectedIndex = 0'u
   viewer.config = config.getConfig()
-  viewer.font = viewer.vg.createFont("sans", "IBMPlexSans-Regular.ttf")
+  viewer.font = viewer.vg.createFont("sans", &getFontPath(viewer.config.font))
   viewer.selectMostUsed()
 
   viewer.wl.eventsHandler.onKey = proc(event: KeyEvent) =
