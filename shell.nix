@@ -13,6 +13,7 @@ pkgs.mkShell {
 		libxkbcommon
 		libGL.dev
 		wayland
+		simdutf
 		wayland-protocols
 		wayland-scanner.dev
 	];

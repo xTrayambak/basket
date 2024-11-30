@@ -4,10 +4,10 @@ It's not suitable for use just yet. You can't even customize it without editing 
 ![basket](assets/screenshot.png)
 
 # Features
+* Configuration via JavaScript, powered by the [Bali](https://github.com/ferus-web/bali) JavaScript engine!
 * Fuzzy find search for apps
 * Save usage history to access your most accessed programs faster
 
 # Roadmap
-* Configuration
 * Image Icons
 * Crawler Cache

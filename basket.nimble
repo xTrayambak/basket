@@ -5,6 +5,7 @@ author        = "xTrayambak"
 description   = "Sift through your basket of apps with ease"
 license       = "GPL-3.0-or-later"
 srcDir        = "src"
+backend       = "cpp"
 bin           = @["basket"]
 
 
@@ -19,5 +20,5 @@ requires "nanovg >= 0.4.0"
 requires "vmath >= 2.0.0"
 requires "fuzzy >= 0.1.0"
 requires "colored_logger >= 0.1.0"
-
 requires "jsony >= 1.1.5"
+requires "https://github.com/ferus-web/bali >= 0.4.0"

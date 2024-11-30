@@ -3,24 +3,9 @@ import std/[os, logging, tables, importutils]
 import std/posix except Key
 import pkg/[opengl, siwin, nanovg, vmath]
 import pkg/siwin/platforms/wayland/[window, windowOpengl]
-import ./[freedesktop, search, usage_history]
+import ./[freedesktop, search, usage_history, config]
 
 privateAccess(Window)
-
-type
-  ColorFor* = enum
-    Background
-    ItemBackground
-    SelectedItemBackground
-    Text
-
-let
-  DefaultColorScheme* = toTable {
-    Background: rgba(18, 18, 18, 102),
-    ItemBackground: rgba(33, 33, 33, 128),
-    Text: rgba(255, 255, 255, 255),
-    SelectedItemBackground: rgba(33, 33, 33, 200)
-  }
 
 type
   Viewer* = object
@@ -30,8 +15,8 @@ type
     wl*: WindowWaylandOpengl
     vg*: NVGContext
     font*: Font
-
-    colors*: Table[ColorFor, Color]
+    
+    config*: Config
     searchQuery*: string
 
     selectedIndex*: uint
@@ -113,8 +98,9 @@ proc keyToChar*(viewer: Viewer, key: Key): char =
     debug "viewer: cannot convert key to character: " & $key
     return '\0'
 
-func getColor*(viewer: Viewer, category: ColorFor): lent Color {.inline.} =
-  viewer.colors[category]
+proc getColor*(viewer: Viewer, category: ColorFor): Color {.inline.} =
+  if category in viewer.config.colors: viewer.config.colors[category]
+  else: DefaultColorScheme[category]
 
 proc drawEntries*(viewer: var Viewer) =
   var layoutCursor = vec2(0, 64f)
@@ -309,7 +295,7 @@ proc runBasketViewer*(entries: sink seq[DesktopEntry]): Viewer =
   viewer.originalCopyEntries = deepCopy(viewer.entries)
   viewer.wl = move(wl)
   viewer.selectedIndex = 0'u
-  viewer.colors = DefaultColorScheme
+  viewer.config = config.getConfig()
   viewer.font = viewer.vg.createFont("sans", "IBMPlexSans-Regular.ttf")
   viewer.selectMostUsed()
 
@@ -322,8 +308,15 @@ proc runBasketViewer*(entries: sink seq[DesktopEntry]): Viewer =
     if event.key == down and event.validKeyPress():
       debug "viewer: Going down"
       if (viewer.selectedIndex + 1) > viewer.entries.len.uint:
-        debug "viewer: can't go further down, ignoring."
-        return
+        case viewer.config.boundsHit
+        of BoundsHitBehaviour.Stay:
+          debug "viewer: can't go further down, ignoring."
+          return
+        of BoundsHitBehaviour.Overflow:
+          debug "viewer: can't go further down, overflowing."
+          viewer.selectedIndex = 0'u
+          viewer.redraw()
+          return
 
       inc viewer.selectedIndex
       
@@ -333,8 +326,15 @@ proc runBasketViewer*(entries: sink seq[DesktopEntry]): Viewer =
     if event.key == up and event.validKeyPress():
       debug "viewer: going up"
       if viewer.selectedIndex < 1:
-        debug "viewer: can't go further up, ignoring."
-        return
+        case viewer.config.boundsHit
+        of BoundsHitBehaviour.Stay:
+          debug "viewer: can't go further up, ignoring."
+          return
+        of BoundsHitBehaviour.Overflow:
+          debug "viewer: can't go further up, overflowing."
+          viewer.selectedIndex = uint(viewer.entries.len - 1)
+          viewer.redraw()
+          return
 
       dec viewer.selectedIndex
 
