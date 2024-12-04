@@ -6,7 +6,7 @@ Basket is a small (~800 LoC), fast, minimal app launcher for Wayland compositors
 * Configuration via JavaScript, powered by the [Bali](https://github.com/ferus-web/bali) JavaScript engine!
 * Fuzzy find search for apps
 * Save usage history to access your most accessed programs faster
+* Crawler cache
 
 # Roadmap
 * Image Icons
-* Crawler Cache
