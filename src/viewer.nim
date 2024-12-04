@@ -1,9 +1,9 @@
 ## Basket viewer/renderer
 import std/[os, logging, tables, importutils]
 import std/posix except Key
-import pkg/[opengl, siwin, nanovg, vmath]
+import pkg/[opengl, siwin, nanovg, vmath, pretty]
 import pkg/siwin/platforms/wayland/[window, windowOpengl]
-import ./[freedesktop, search, usage_history, config, sugar, fonts]
+import ./[freedesktop, search, usage_history, config, sugar, fonts, argparser]
 
 privateAccess(Window)
 
@@ -15,8 +15,10 @@ type
     wl*: WindowWaylandOpengl
     vg*: NVGContext
     font*: Font
-    
+
+    input*: Input
     config*: Config
+
     searchQuery*: string
 
     selectedIndex*: uint
@@ -25,7 +27,10 @@ type
     caps*: bool
 
 proc keyToChar*(viewer: Viewer, key: Key): char =
-  let caps = viewer.caps
+  let caps = 
+    viewer.caps or 
+    viewer.wl.keyboard.pressed.contains(lshift) or 
+    viewer.wl.keyboard.pressed.contains(rshift)
 
   case key
   of a:
@@ -112,7 +117,7 @@ proc drawEntries*(viewer: var Viewer) =
     let selected = i.uint == viewer.selectedIndex
     
     viewer.vg.beginPath()
-    viewer.vg.roundedRect(x = layoutCursor.x + 8f, y = layoutCursor.y + 4f, w = cfloat(viewer.size.x.float - 32f), h = 32f, r = 8f)
+    viewer.vg.roundedRect(x = layoutCursor.x + 8f, y = layoutCursor.y + 4f, w = cfloat(viewer.size.x.float - 16f), h = 32f, r = 8f)
     viewer.vg.fillColor(viewer.getColor(if not selected: ItemBackground else: SelectedItemBackground))
     viewer.vg.fill()
     viewer.vg.closePath()
@@ -143,7 +148,7 @@ proc drawSearchDisplay*(viewer: var Viewer) =
     16f, 16f,
     (
       if viewer.searchQuery.len < 1:
-        "Search . . ."
+        viewer.config.searchPlaceholder
       else:
         viewer.searchQuery
     )
@@ -161,7 +166,9 @@ proc draw*(viewer: var Viewer) =
 
   viewer.vg.beginPath()
   viewer.vg.roundedRect(0, 0, viewer.size.x.cfloat, viewer.size.y.cfloat, 16f)
-  viewer.vg.fillColor(viewer.getColor(Background))
+  let color = viewer.getColor(Background)
+  viewer.wl.m_transparent = color.a != 255
+  viewer.vg.fillColor(color)
   viewer.vg.fill()
   viewer.vg.closePath()
   
@@ -269,10 +276,11 @@ proc executeSelectedEntry*(viewer: var Viewer) {.noReturn.} =
 proc validKeyPress*(event: KeyEvent): bool {.inline.} =
   event.pressed or event.repeated
 
-proc runBasketViewer*(entries: sink seq[DesktopEntry]): Viewer =
+proc runBasketViewer*(input: sink Input, entries: sink seq[DesktopEntry]): Viewer =
   info "viewer: initializing viewer"
   var viewer: Viewer
   viewer.size = ivec2(640, 480)
+  viewer.input = move(input)
 
   info "viewer: creating surface"
   var wl = newOpenglWindowWayland(

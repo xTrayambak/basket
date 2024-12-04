@@ -1,6 +1,6 @@
 ## Basket crawler - crawls certain locations for desktop entries
 import std/[os, distros, strutils, logging]
-import ./[sugar, freedesktop]
+import ./[sugar, freedesktop, traversal_cache]
 
 proc home: string {.inline.} = getHomeDir()
 
@@ -28,6 +28,17 @@ proc getTargetDirectories*: seq[string] =
   targets
 
 proc crawlForDesktopEntries*: seq[DesktopEntry] =
+  let cache = getTraversalCache()
+  if *cache:
+    debug "crawler: found valid cache, skipping traversal!"
+    var entries: seq[DesktopEntry]
+    for candidate in &cache:
+      let entry = readDesktopEntry(candidate)
+      if *entry:
+        entries &= &entry
+  else:
+    debug "crawler: found no valid cache, going through slow path of crawling"
+
   let targets = getTargetDirectories()
 
   info "crawler: beginning crawl on " & $targets.len & " targets"
@@ -54,5 +65,6 @@ proc crawlForDesktopEntries*: seq[DesktopEntry] =
     let entry = readDesktopEntry(candidate)
     if *entry:
       entries &= &entry
-
+  
+  candidates.save()
   entries

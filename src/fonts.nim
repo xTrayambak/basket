@@ -4,6 +4,7 @@ import std/[logging, strutils, options]
 {.passL: gorge("pkg-config --cflags fontconfig --libs").strip().}
 
 {.emit: """
+#include <cstdio>
 #include <fontconfig/fontconfig.h>
 #include <string.h>
 #include <assert.h>
@@ -26,9 +27,6 @@ extern "C" char* libbasket_get_font(char *name)
   FcFontSet *fs = FcFontList(NULL, pattern, os);
   if (!fs)
     return NULL;
-
-  char *values = NULL;
-  size_t size = 0;
 
   for (int i = 0; i < fs->nfont; i++)
   {
@@ -54,7 +52,8 @@ extern "C" char* libbasket_get_font(char *name)
 proc libbasket_get_font(name: cstring): cstring {.importc, cdecl.}
 proc getFontPath*(name: string): Option[string] =
   let value = libbasket_get_font(name.cstring)
-  echo value == nil
-  info "basket: using font: " & $value
   if value.len > 0:
+    info "basket: using font: " & $value
     return some($value)
+  else:
+    warn "basket: unknown font: " & $value
